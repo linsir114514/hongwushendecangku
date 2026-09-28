@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>圆桌裁决 · 七罪单词审判 | 四级词汇小游戏</title>
+<meta name="description" content="和七宗罪一起围着服务器做四级词汇题:两个选项长得很像,答对最少的人被驱逐出圆桌。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= 顶栏 ================= -->
+  <header id="hud">
+    <div class="brand">
+      <span class="seal">审</span>
+      <b>圆桌裁决</b>
+      <span class="sub">七罪 · 四级单词审判</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="hudtag hideS" id="timerTag">已作答 <b>0</b> / 8</span>
+    <span class="hudtag hideS">键盘 <b>A</b> / <b>B</b> 作答</span>
+    <button class="btn ghost" id="btnVoice" title="单词美音朗读">🔊 美音开</button>
+    <button class="btn ghost" id="btnRules">规则</button>
+    <button class="btn ghost" id="btnRestart">重开</button>
+  </header>
+
+  <!-- ================= 舞台 ================= -->
+  <main id="stage">
+    <div id="canvas">
+      <div id="table"><div class="ring"></div></div>
+
+      <div id="serverWrap">
+        <div class="beam"></div>
+        <div class="server">
+          <div class="leds"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="screen" id="serverScreen">等待</div>
+          <div class="core"></div>
+        </div>
+      </div>
+      <div class="srvname">评判服务器</div>
+
+      <div id="seats"></div>
+      <div id="bubbleLayer"></div>
+
+      <div id="serverBubble"></div>
+
+      <div id="banner"></div>
+    </div>
+  </main>
+
+  <!-- ================= 答题面板 ================= -->
+  <footer id="qpanel">
+    <div class="qleft">
+      <div class="qmeta">
+        <span class="tagp pos" id="qpos">—</span>
+        <span class="tagp idx" id="qidx">准备中</span>
+        <span class="tagp lv" id="qlevel" style="display:none">四级拓展</span>
+      </div>
+      <div class="qwordrow">
+        <div id="qword" class="dim">等待开始</div>
+        <button class="speakbtn" id="btnReplayWord" title="再听一遍(R)">🔊</button>
+      </div>
+      <div class="tbar"><i id="tbarFill"></i></div>
+      <div class="qhint" id="qhint">点"开始审判"进入圆桌</div>
+    </div>
+    <div class="opts" id="opts"></div>
+  </footer>
+</div>
+
+<!-- ================= 起始页 ================= -->
+<div class="overlay" id="startOverlay">
+  <div class="ovbox">
+    <h1>圆桌裁决 · <span class="thin">七罪单词审判</span></h1>
+    <p class="lead">
+      八个一模一样的小人围坐在圆桌旁,桌子中间是<b>评判服务器</b>。它出一道四级词汇题,
+      给出两个<b>长得很像</b>的中文释义 —— 一个是正确答案,另一个来自最容易和它混的那个词。<br>
+      你和七宗罪一起作答。<b>全部回合结束后,答对題数最少的人被驱逐出圆桌。</b>
+    </p>
+
+    <div class="rulebox">
+      <b>规则</b>
+      <ul>
+        <li>每题显示一个四级词汇,两个选项语义相似,选出正确的一个。</li>
+        <li>题库共 <b>30 组易混词对(60 个词)</b>,已逐词对照四级词表核对;其中 5 个词只被部分四级词表收录,会用琥珀色「<b>四级拓展</b>」标签标出来。</li>
+        <li>单词出现时会<b>自动用美音朗读一遍</b>,点单词旁的 🔊 或按 <b>R</b> 可以再听。</li>
+        <li>你有 <b>12 秒</b>;其他小人在 <b>2 ~ 10 秒</b>内随机作答,每人有 <b>10%</b> 概率答错。</li>
+        <li>你一作答,其余人就会立刻"快进"报出答案,不用干等。</li>
+        <li>每答一个单词算一回合,回合数由你选。</li>
+        <li>结束后出结算:逐题显示谁对谁错,并宣布被驱逐的人。</li>
+        <li>裁定顺序:<b>答对数多者胜 → 答错少者胜 → 平均用时快者胜</b>。</li>
+        <li>性格只影响七宗罪在 2~10 秒区间里偏快还是偏慢,<b>不影响错误率</b>。</li>
+      </ul>
+    </div>
+
+    <div class="rulebox">
+      <b>语音朗读</b>
+      <div class="voiceset">
+        <label>发音人
+          <select id="voicePick"></select>
+        </label>
+        <label>语速
+          <select id="ratePick">
+            <option value="0.7">慢</option>
+            <option value="0.9" selected>正常</option>
+            <option value="1.05">快</option>
+          </select>
+        </label>
+        <button class="btn" id="btnVoiceTest">试听</button>
+      </div>
+      <p class="mini" id="voiceNote" style="margin:8px 0 0"></p>
+    </div>
+
+    <div class="lead" style="margin:16px 0 0">圆桌上的八个座位(同一个人的七种情绪 + 你)</div>
+    <div class="seatsPreview" id="seatPreview"></div>
+
+    <div class="lead" style="margin:18px 0 0">选择回合数(每答一个单词算一回合)</div>
+    <div class="pickrow" id="roundPick"></div>
+
+    <div class="pickrow" style="margin-top:22px">
+      <button class="btn gold" id="btnStart">开始审判 →</button>
+      <button class="btn" id="btnHelp2">再看一遍规则</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 规则 ================= -->
+<div class="overlay" id="rulesOverlay">
+  <div class="ovbox">
+    <h1>规则</h1>
+    <div class="rulebox" style="margin-top:14px">
+      <ul>
+        <li>圆桌周围 8 个座位:你,以及傲慢 / 贪婪 / 嫉妒 / 暴怒 / 痴迷 / 暴食 / 懒惰。</li>
+        <li>中间的评判服务器出题:一个四级词汇 + 两个语义相近的释义,二选一。</li>
+        <li>题库 30 组易混词对(60 个词),已逐词对照四级词表核对;带琥珀色「四级拓展」标签的是只被部分四级词表收录的词。</li>
+        <li>你有 <b>12 秒</b>作答(超时算未作答);其他小人各自在 <b>2 ~ 10 秒</b>内作答,每人 <b>10%</b> 概率答错。</li>
+        <li>你一作答,其余人立刻快进报答案。</li>
+        <li>每回合结束会告诉你:正确答案、谁答错、以及这两个易混词的区别。</li>
+        <li>全部回合结束后结算:逐题矩阵显示谁对谁错。</li>
+        <li>被驱逐的人 = <b>答对数最少</b>;并列时看<b>答错数</b>(少者胜),再并列看<b>平均用时</b>(快者胜)。</li>
+        <li>快捷键:A / B 或 1 / 2 作答,<b>R</b> 再听一遍单词,Enter 继续。</li>
+        <li>单词出现时会自动用美音读一遍;顶栏 <b>🔊 美音</b> 可以随时开关,发音人与语速在开始界面选。</li>
+      </ul>
+    </div>
+    <div class="pickrow" style="margin-top:18px">
+      <button class="btn gold" id="btnRulesBack">回去继续</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 结算 ================= -->
+<div class="overlay" id="settleOverlay">
+  <div class="ovbox" id="settleBody"></div>
+</div>
+
+<script src="js/words.js"></script>
+<script src="js/chibi.js"></script>
+<script src="js/speech.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
